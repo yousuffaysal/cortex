@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import pytest
 
-from cortex_policy.resolve import resolve_script
+from cortex_policy.resolve import ResolvedCommand, resolve_script
 from cortex_policy.shellparse import ParseProblem, parse
 
 
-def resolved(command: str, env: dict[str, str] | None = None) -> list:
+def resolved(command: str, env: dict[str, str] | None = None) -> list[ResolvedCommand]:
     return resolve_script(parse(command), env or {})
 
 

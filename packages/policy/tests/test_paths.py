@@ -124,7 +124,7 @@ class TestWorkspaceScopingInShellCommands:
 
     def test_write_outside_workspace_is_broad(self, tmp_path: Path) -> None:
         decision = decide(
-            FileOperation(action=FileAction.WRITE, path="/somewhere/else/out.txt"),
+            FileOperation(action=FileAction.WRITE, path=Path("/somewhere/else/out.txt")),
             PolicyContext(autonomy=AutonomyLevel.L2_CONFIRM_RISKY, workspaces=(tmp_path,)),
         )
         assert decision.risk is RiskClass.WRITE_BROAD

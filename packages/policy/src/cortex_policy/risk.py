@@ -11,13 +11,13 @@ the prose is a defect in this file, not in the prose.
 
 from __future__ import annotations
 
-from enum import Enum, IntEnum
+from enum import IntEnum, StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class RiskClass(str, Enum):
+class RiskClass(StrEnum):
     """What kind of damage an operation can do.
 
     Ordered by severity via :data:`SEVERITY`. When one command implies several
@@ -45,7 +45,7 @@ SEVERITY: dict[RiskClass, int] = {
 }
 
 
-def most_severe(classes: "list[RiskClass]") -> RiskClass:
+def most_severe(classes: list[RiskClass]) -> RiskClass:
     """Escalation rule: a compound operation is as risky as its worst part."""
     if not classes:
         return RiskClass.EXEC_HOST  # fail closed: an empty classification is not "safe"
@@ -61,7 +61,7 @@ class AutonomyLevel(IntEnum):
     L3_AUTONOMOUS = 3
 
 
-class Verdict(str, Enum):
+class Verdict(StrEnum):
     """The only three answers the engine can give.
 
     ``DENY`` is not "approve with a scarier dialog". There is no UI path that turns a
@@ -99,7 +99,7 @@ PRIVILEGE_DROP_CLASSES: frozenset[RiskClass] = frozenset(
 )
 
 
-class FileAction(str, Enum):
+class FileAction(StrEnum):
     READ = "read"
     WRITE = "write"
     DELETE = "delete"

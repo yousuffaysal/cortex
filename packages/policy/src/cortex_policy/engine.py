@@ -57,10 +57,40 @@ _IRREVERSIBLE_PROGRAMS: frozenset[str] = frozenset(
 
 _NETWORK_PROGRAMS: frozenset[str] = frozenset(
     {
-        "curl", "wget", "fetch", "aria2c", "httpie", "http", "ssh", "scp", "sftp",
-        "rsync", "nc", "netcat", "telnet", "ping", "dig", "nslookup", "host",
-        "pip", "pip3", "npm", "npx", "yarn", "pnpm", "brew", "apt", "apt-get",
-        "uv", "uvx", "cargo", "gem", "go", "poetry", "conda", "docker",
+        "curl",
+        "wget",
+        "fetch",
+        "aria2c",
+        "httpie",
+        "http",
+        "ssh",
+        "scp",
+        "sftp",
+        "rsync",
+        "nc",
+        "netcat",
+        "telnet",
+        "ping",
+        "dig",
+        "nslookup",
+        "host",
+        "pip",
+        "pip3",
+        "npm",
+        "npx",
+        "yarn",
+        "pnpm",
+        "brew",
+        "apt",
+        "apt-get",
+        "uv",
+        "uvx",
+        "cargo",
+        "gem",
+        "go",
+        "poetry",
+        "conda",
+        "docker",
     }
 )
 
@@ -70,17 +100,64 @@ _WRITE_PROGRAMS: frozenset[str] = frozenset(
 
 _READ_PROGRAMS: frozenset[str] = frozenset(
     {
-        "ls", "cat", "head", "tail", "less", "more", "grep", "egrep", "fgrep", "rg",
-        "ag", "find", "fd", "wc", "file", "stat", "pwd", "tree", "du", "df", "diff",
-        "cmp", "basename", "dirname", "realpath", "readlink", "which", "type",
-        "printenv", "date", "whoami", "id", "uname", "ps",
+        "ls",
+        "cat",
+        "head",
+        "tail",
+        "less",
+        "more",
+        "grep",
+        "egrep",
+        "fgrep",
+        "rg",
+        "ag",
+        "find",
+        "fd",
+        "wc",
+        "file",
+        "stat",
+        "pwd",
+        "tree",
+        "du",
+        "df",
+        "diff",
+        "cmp",
+        "basename",
+        "dirname",
+        "realpath",
+        "readlink",
+        "which",
+        "type",
+        "printenv",
+        "date",
+        "whoami",
+        "id",
+        "uname",
+        "ps",
     }
 )
 
 _COMPUTE_PROGRAMS: frozenset[str] = frozenset(
     {
-        "echo", "printf", "jq", "awk", "sort", "uniq", "cut", "tr", "seq", "expr",
-        "bc", "base64", "md5", "md5sum", "shasum", "sha256sum", "true", "false", "test",
+        "echo",
+        "printf",
+        "jq",
+        "awk",
+        "sort",
+        "uniq",
+        "cut",
+        "tr",
+        "seq",
+        "expr",
+        "bc",
+        "base64",
+        "md5",
+        "md5sum",
+        "shasum",
+        "sha256sum",
+        "true",
+        "false",
+        "test",
     }
 )
 
@@ -219,14 +296,12 @@ def _classify_shell(
                 if where.symlink_escape:
                     risk = most_severe([risk, RiskClass.WRITE_BROAD])
                     escalations.append(
-                        f"{operand!r} looks like it is inside the workspace but resolves outside it "
-                        "through a symlink."
+                        f"{operand!r} looks like it is inside the workspace but "
+                        "resolves outside it through a symlink."
                     )
                 elif not where.inside:
                     risk = most_severe([risk, RiskClass.WRITE_BROAD])
-                    escalations.append(
-                        f"{operand!r} is outside every approved workspace."
-                    )
+                    escalations.append(f"{operand!r} is outside every approved workspace.")
 
         # Every host shell command is at least exec_host — PRD §6.2.
         contributions.append(most_severe([risk, RiskClass.EXEC_HOST]))
@@ -313,7 +388,9 @@ def _classify_file(
             risk = most_severe([risk, RiskClass.WRITE_BROAD])
             reasons.insert(0, f"{str(target)!r} is outside every approved workspace.")
         else:
-            reasons.append(f"{str(target)!r} is inside approved workspace {where.matched_workspace}.")
+            reasons.append(
+                f"{str(target)!r} is inside approved workspace {where.matched_workspace}."
+            )
 
     if any(sensitivity(t) is PathSensitivity.PER_FILE_APPROVAL for t in targets):
         risk = most_severe([risk, RiskClass.WRITE_BROAD])
@@ -369,7 +446,10 @@ def decide(operation: Operation, context: PolicyContext | None = None) -> Decisi
         return Decision(
             verdict=Verdict.ALLOW,
             risk=risk,
-            reasons=("Every program in this command is on this workspace's approved list.", *reasons),
+            reasons=(
+                "Every program in this command is on this workspace's approved list.",
+                *reasons,
+            ),
             matched_rule="workspace_allowlist",
             requires_undo_snapshot=snapshot,
             display_command=display,

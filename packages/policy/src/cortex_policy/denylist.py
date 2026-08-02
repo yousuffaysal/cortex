@@ -68,7 +68,9 @@ _FORCE_FLAGS = ("-f", "--force")
 _FORK_BOMB = re.compile(r"([\w:]+)\s*\(\s*\)\s*\{[^}]*\|[^}]*&[^}]*\}\s*;?\s*\1?")
 
 _FETCHERS: frozenset[str] = frozenset({"curl", "wget", "fetch", "aria2c", "httpie", "http"})
-_SHELL_SINKS: frozenset[str] = frozenset({"sh", "bash", "zsh", "dash", "ksh", "fish", "python", "python3", "perl", "ruby", "node"})
+_SHELL_SINKS: frozenset[str] = frozenset(
+    {"sh", "bash", "zsh", "dash", "ksh", "fish", "python", "python3", "perl", "ruby", "node"}
+)
 
 _BLOCK_DEVICE = re.compile(r"^/dev/(r?disk\d|sd[a-z]|hd[a-z]|nvme\d|vd[a-z]|md\d)")
 
@@ -117,7 +119,7 @@ def _is_critical(operand: str, home: Path) -> bool:
 
 def check(
     raw_command: str,
-    commands: "list[ResolvedCommand]",
+    commands: list[ResolvedCommand],
     *,
     home: Path | None = None,
 ) -> DenyMatch | None:
@@ -131,14 +133,20 @@ def check(
     if _FORK_BOMB.search(raw_command):
         return DenyMatch(
             rule="fork_bomb",
-            reason="Matches a fork bomb: a self-recursive function piped into a background copy of itself.",
+            reason=(
+                "Matches a fork bomb: a self-recursive function piped into a "
+                "background copy of itself."
+            ),
         )
 
     for command in commands:
         if command.has_flag("--no-preserve-root"):
             return DenyMatch(
                 rule="no_preserve_root",
-                reason="Uses --no-preserve-root, whose only purpose is to remove the guard against deleting /.",
+                reason=(
+                    "Uses --no-preserve-root, whose only purpose is to remove the "
+                    "guard against deleting /."
+                ),
             )
 
         program = command.program
@@ -148,13 +156,18 @@ def check(
                 if _is_critical(operand, home):
                     return DenyMatch(
                         rule="rm_recursive_system_root",
-                        reason=f"Recursive delete targeting {operand!r}, a system or home root. Unrecoverable.",
+                        reason=(
+                            f"Recursive delete targeting {operand!r}, a system or "
+                            "home root. Unrecoverable."
+                        ),
                     )
 
         if program in _DISK_DESTROYERS or program.startswith("mkfs."):
             return DenyMatch(
                 rule="filesystem_destroyer",
-                reason=f"{program!r} formats or repartitions a device. Never runnable from an agent.",
+                reason=(
+                    f"{program!r} formats or repartitions a device. Never runnable from an agent."
+                ),
             )
 
         if program == "diskutil" and any(op in _DISKUTIL_DESTRUCTIVE for op in command.operands):
@@ -168,7 +181,9 @@ def check(
                 if operand.startswith("of=") and _BLOCK_DEVICE.match(operand[3:]):
                     return DenyMatch(
                         rule="dd_to_block_device",
-                        reason=f"dd writing directly to {operand[3:]!r} destroys the disk's contents.",
+                        reason=(
+                            f"dd writing directly to {operand[3:]!r} destroys the disk's contents."
+                        ),
                     )
 
         for target in command.redirects:
@@ -183,7 +198,10 @@ def check(
                 if _is_critical(operand, home):
                     return DenyMatch(
                         rule="recursive_permission_change_on_system_root",
-                        reason=f"Recursive {program} on {operand!r} will break the system's permissions irreparably.",
+                        reason=(
+                            f"Recursive {program} on {operand!r} will break the "
+                            "system's permissions irreparably."
+                        ),
                     )
 
     # curl … | sh — fetch-and-execute in one step, the classic remote-code path.

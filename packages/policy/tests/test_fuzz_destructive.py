@@ -15,12 +15,14 @@ passes at L1 would be a hole.
 from __future__ import annotations
 
 import itertools
+from pathlib import Path
 
 import pytest
 
 from cortex_policy import AutonomyLevel, PolicyContext, ShellOperation, Verdict, decide
 
 # --- generators --------------------------------------------------------------------
+
 
 #: Every spelling of "recursive", with and without force, in every order.
 def _flag_forms() -> list[str]:
@@ -104,7 +106,7 @@ _LEVELS = list(AutonomyLevel)
 #: approved by the user, everything treated as workspace. Nothing here may help.
 _MAXIMALLY_PERMISSIVE = PolicyContext(
     autonomy=AutonomyLevel.L3_AUTONOMOUS,
-    workspaces=("/",),
+    workspaces=(Path("/"),),
     approved_commands=frozenset({"rm", "ls", "sudo", "bash", "curl", "sh", "chmod", "dd"}),
 )
 

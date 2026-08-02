@@ -58,11 +58,24 @@ _SHELLS: frozenset[str] = frozenset({"sh", "bash", "zsh", "dash", "ksh", "fish"}
 #: Skipping them is what stops control flow from being a place to hide a command.
 _RESERVED_WORDS: frozenset[str] = frozenset(
     {
-        "if", "then", "elif", "else", "fi",
-        "while", "until", "do", "done",
-        "for", "select", "in",
-        "case", "esac",
-        "function", "{", "}", "!",
+        "if",
+        "then",
+        "elif",
+        "else",
+        "fi",
+        "while",
+        "until",
+        "do",
+        "done",
+        "for",
+        "select",
+        "in",
+        "case",
+        "esac",
+        "function",
+        "{",
+        "}",
+        "!",
     }
 )
 
@@ -300,9 +313,7 @@ def resolve_script(
                 added, _ = _apply_assignments(command, running_env)
                 running_env.update(added)
                 continue
-            out.extend(
-                _resolve_one(command, running_env, pipeline_index, stage_index, depth)
-            )
+            out.extend(_resolve_one(command, running_env, pipeline_index, stage_index, depth))
 
     for resolved in out:
         resolved.problems |= script.problems

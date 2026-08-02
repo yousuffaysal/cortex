@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path, PurePosixPath
 
 __all__ = [
@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 
-class PathSensitivity(str, Enum):
+class PathSensitivity(StrEnum):
     NORMAL = "normal"
     #: PRD §11 / invariant 10: readable only with explicit per-file approval, every time.
     PER_FILE_APPROVAL = "per_file_approval"
@@ -153,7 +153,7 @@ class Containment:
     matched_workspace: Path | None
 
 
-def contains(workspaces: "tuple[Path, ...] | list[Path]", path: Path | str) -> Containment:
+def contains(workspaces: tuple[Path, ...] | list[Path], path: Path | str) -> Containment:
     """Is ``path`` inside any approved workspace?
 
     Containment must hold *both* lexically and after symlink resolution. A path that

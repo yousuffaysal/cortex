@@ -33,7 +33,7 @@ variables, and globs in argument position are all recorded rather than guessed a
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 __all__ = [
     "ParseProblem",
@@ -45,7 +45,7 @@ __all__ = [
 ]
 
 
-class ParseProblem(str, Enum):
+class ParseProblem(StrEnum):
     """Something in the command we could not resolve to a definite meaning.
 
     Every one of these means "I cannot tell what this does". The engine's response to
@@ -105,8 +105,10 @@ class Word:
         if kind != "lit" or "=" not in value:
             return False
         name = value.split("=", 1)[0]
-        return bool(name) and (name[0].isalpha() or name[0] == "_") and all(
-            ch.isalnum() or ch == "_" for ch in name
+        return (
+            bool(name)
+            and (name[0].isalpha() or name[0] == "_")
+            and all(ch.isalnum() or ch == "_" for ch in name)
         )
 
 
@@ -140,7 +142,22 @@ class ParsedScript:
 
 # Longest match first: ">>" must be tried before ">", "&&" before "&>" before "&".
 _OPERATORS = (
-    "&&", "||", ">>", "<<", "&>", ">&", ">|", ";;", ";", "|", "&", ">", "<", "\n", "(", ")"
+    "&&",
+    "||",
+    ">>",
+    "<<",
+    "&>",
+    ">&",
+    ">|",
+    ";;",
+    ";",
+    "|",
+    "&",
+    ">",
+    "<",
+    "\n",
+    "(",
+    ")",
 )
 _REDIRECT_OPS = (">>", "<<", "&>", ">&", ">|", ">", "<")
 _SEPARATORS = ("&&", "||", ";;", ";", "&", "\n", "(", ")")
