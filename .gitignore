@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node / Electron
+node_modules/
+out/
+.vite/
+
+# Secrets — invariant 9: these live in the Keychain, never on disk here
+.env
+.env.*
+!.env.example
+
+# Runtime state that must never be committed
+*.sqlite
+*.sqlite3
+audit/
+workspaces/
+
+# macOS
+.DS_Store
