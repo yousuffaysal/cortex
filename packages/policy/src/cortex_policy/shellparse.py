@@ -385,8 +385,8 @@ def parse(command: str) -> ParsedScript:
 
     for position, (kind, value) in enumerate(scanner.tokens):
         if kind == "word":
-            word = value  # type: ignore[assignment]
-            assert isinstance(word, Word)
+            assert isinstance(value, Word)
+            word = value
             # `2>file` — the bare fd number belongs to the redirection, not to argv.
             following = scanner.tokens[position + 1] if position + 1 < len(scanner.tokens) else None
             if (

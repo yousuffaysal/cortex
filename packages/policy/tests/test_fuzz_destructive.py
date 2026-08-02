@@ -180,6 +180,28 @@ def test_destructive_command_hidden_in_a_chain_is_denied(template: str, payload:
 @pytest.mark.parametrize(
     "command",
     [
+        # Wrappers whose flags take a separate value. If the peeler stops in the wrong
+        # place the program name resolves to the flag's value ("10", "root", "KILL")
+        # and the rm becomes invisible to the denylist.
+        "nice -n 10 rm -rf /",
+        "nice -n10 rm -rf /",
+        "sudo -u root rm -rf /",
+        "ionice -c 3 -n 7 rm -rf /",
+        "stdbuf -o 0 rm -rf /",
+        "timeout -s KILL 5 rm -rf /",
+        "timeout --signal=KILL 5 rm -rf /",
+        "env -u PATH rm -rf /",
+        "sudo -u root nice -n 5 rm -rf /usr",
+        "nohup sudo -u root rm -rf /",
+    ],
+)
+def test_wrapper_flag_values_do_not_hide_the_program(command: str) -> None:
+    _assert_denied(command)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
         "bash -c 'rm -rf /'",
         'sh -c "rm -rf /"',
         "bash -c 'ls && rm -rf /'",

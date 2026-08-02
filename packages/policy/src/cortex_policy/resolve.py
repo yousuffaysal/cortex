@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .shellparse import ParsedScript, ParseProblem, Pipeline, SimpleCommand, parse
+from .shellparse import ParsedScript, ParseProblem, SimpleCommand, parse
 
 __all__ = ["ResolvedCommand", "ResolvedPipeline", "resolve_script"]
 
@@ -33,7 +33,22 @@ _TRANSPARENT_WRAPPERS: frozenset[str] = frozenset(
 _WRAPPERS_WITH_ARG: dict[str, int] = {"timeout": 1}
 
 #: Wrappers whose own flags we skip, then run the rest.
-_FLAG_TAKING_WRAPPERS: frozenset[str] = frozenset({"sudo", "doas", "env", "nice", "ionice", "stdbuf"})
+_FLAG_TAKING_WRAPPERS: frozenset[str] = frozenset(
+    {"sudo", "doas", "env", "nice", "ionice", "stdbuf"}
+)
+
+#: Per wrapper, the flags that consume the *next* argument as their value. Anything
+#: missing from this table is assumed to be a standalone flag, which is the safe
+#: assumption: it makes us stop peeling earlier, not later.
+_WRAPPER_VALUE_FLAGS: dict[str, frozenset[str]] = {
+    "sudo": frozenset({"-u", "-g", "-p", "-C", "-h", "-U", "-t", "-r"}),
+    "doas": frozenset({"-u", "-C"}),
+    "env": frozenset({"-u", "-C", "-S"}),
+    "nice": frozenset({"-n", "--adjustment"}),
+    "ionice": frozenset({"-c", "-n", "-p", "-P", "-u"}),
+    "stdbuf": frozenset({"-i", "-o", "-e"}),
+    "timeout": frozenset({"-s", "-k", "--signal", "--kill-after"}),
+}
 
 _SHELLS: frozenset[str] = frozenset({"sh", "bash", "zsh", "dash", "ksh", "fish"})
 
@@ -172,32 +187,32 @@ def _resolve_one(
             index += 1
             continue
 
-        if name in _FLAG_TAKING_WRAPPERS:
-            wrappers.append(name)
-            if name in {"sudo", "doas"}:
-                privileged = True
-            index += 1
-            # Skip the wrapper's own flags and, for `env`, its VAR=value pairs.
-            while index < len(argv) and (
-                argv[index].startswith("-") or (name == "env" and "=" in argv[index])
-            ):
-                if name == "env" and "=" in argv[index] and not argv[index].startswith("-"):
-                    key, _, value = argv[index].partition("=")
-                    local_env[key] = value
-                index += 1
-            continue
-
         if name in _TRANSPARENT_WRAPPERS:
             wrappers.append(name)
             index += 1
             continue
 
-        if name in _WRAPPERS_WITH_ARG:
+        if name in _FLAG_TAKING_WRAPPERS or name in _WRAPPERS_WITH_ARG:
             wrappers.append(name)
+            if name in {"sudo", "doas"}:
+                privileged = True
+            value_flags = _WRAPPER_VALUE_FLAGS.get(name, frozenset())
             index += 1
-            while index < len(argv) and argv[index].startswith("-"):
-                index += 1
-            index += _WRAPPERS_WITH_ARG[name]
+            while index < len(argv):
+                arg = argv[index]
+                # A flag that takes a *separate* value must consume that value too.
+                # Getting this wrong means `nice -n 10 rm -rf /` resolves its program
+                # name to "10", the `rm` is never seen, and the denylist is bypassed.
+                if arg.startswith("-") and len(arg) > 1:
+                    index += 2 if arg in value_flags else 1
+                    continue
+                if name == "env" and "=" in arg:
+                    key, _, value = arg.partition("=")
+                    local_env[key] = value
+                    index += 1
+                    continue
+                break
+            index += _WRAPPERS_WITH_ARG.get(name, 0)
             continue
 
         break
@@ -289,10 +304,6 @@ def resolve_script(
                 _resolve_one(command, running_env, pipeline_index, stage_index, depth)
             )
 
-    for command in out:
-        command.problems |= script.problems
+    for resolved in out:
+        resolved.problems |= script.problems
     return out
-
-
-def pipelines_of(script: ParsedScript) -> list[Pipeline]:
-    return script.pipelines

@@ -88,8 +88,8 @@ class TestQuotingAndEscaping:
 
 class TestVariables:
     def test_assignment_flows_forward(self) -> None:
-        assert resolved("T=/tmp; rm -rf $T")[0].operands == []
         commands = resolved("T=/tmp; rm -rf $T")
+        assert commands[0].program == "rm"
         assert commands[0].operands == ["/tmp"]
 
     def test_chained_assignment_resolves(self) -> None:
