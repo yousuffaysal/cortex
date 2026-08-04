@@ -271,8 +271,20 @@ class IndexStore:
         vectors = self._conn.execute("SELECT COUNT(*) AS n FROM chunk_vectors").fetchone()["n"]
         return {"files": int(files), "chunks": int(chunks), "vectors": int(vectors)}
 
-    def size_bytes(self) -> int:
+    def checkpoint(self) -> None:
+        """Fold the WAL back into the main database.
+
+        Without this, :meth:`size_bytes` counts pages twice — once in the WAL and once
+        in the database — and reports an index far larger than it is. Any size claim
+        must checkpoint first or it is measuring bookkeeping.
+        """
+        self._conn.commit()
+        self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
+    def size_bytes(self, *, checkpoint: bool = True) -> int:
         """Total on-disk footprint, including the WAL sidecar."""
+        if checkpoint:
+            self.checkpoint()
         return sum(
             candidate.stat().st_size
             for candidate in self.path.parent.glob(self.path.name + "*")
