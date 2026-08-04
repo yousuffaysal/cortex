@@ -52,6 +52,24 @@ _HOME_PROTECTED_DIRS: tuple[str, ...] = (
     "Library/Application Support/BraveSoftware",
 )
 
+#: Directory names that hold credentials *wherever they appear*, not only under $HOME.
+#:
+#: The home-relative list above misses a real case: an approved workspace that is not
+#: inside $HOME but contains a `.ssh` or `.password-store` directory — a copied dotfiles
+#: repo, a restored backup, a mounted volume. A directory called `.ssh` holds SSH keys
+#: regardless of where it sits, so it is matched on any path component.
+_PROTECTED_DIR_NAMES: frozenset[str] = frozenset(
+    {
+        ".ssh",
+        ".gnupg",
+        ".password-store",
+        "Keychains",
+        ".aws",
+        ".docker",
+        ".kube",
+    }
+)
+
 #: Absolute paths that are protected regardless of who owns them.
 _ABS_PROTECTED: tuple[str, ...] = (
     "/etc/shadow",
@@ -123,6 +141,9 @@ def sensitivity(path: Path | str, *, home: Path | None = None) -> PathSensitivit
         as_posix = candidate.as_posix()
 
         if as_posix in _ABS_PROTECTED:
+            return PathSensitivity.PROTECTED
+        # Any component, so `/anywhere/.ssh/config` is caught as readily as `~/.ssh/config`.
+        if _PROTECTED_DIR_NAMES & set(candidate.parts):
             return PathSensitivity.PROTECTED
         if candidate.name in _PROTECTED_BASENAMES:
             return PathSensitivity.PROTECTED
