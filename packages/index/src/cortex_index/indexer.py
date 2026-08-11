@@ -24,7 +24,7 @@ from pathlib import Path
 from .embed import Embedder, HashingEmbedder, chunk_text
 from .exact import ExactSearcher, RipgrepMissing
 from .fusion import DEFAULT_WEIGHTS, FusedHit, Source, fuse
-from .store import ChunkHit, IndexStore
+from .store import ChunkHit, IndexStore, read_chunk_text
 from .walker import FileRecord, WalkStats, walk
 
 __all__ = ["IndexReport", "Indexer"]
@@ -198,7 +198,12 @@ class Indexer:
             vector = self.embedder.embed([query])[0]
             results[Source.VECTOR] = self.store.search_vector(vector, limit=per_source)
 
-        return fuse(results, weights=weights or DEFAULT_WEIGHTS, limit=limit)
+        fused = fuse(results, weights=weights or DEFAULT_WEIGHTS, limit=limit)
+        for hit in fused:
+            if not hit.snippet:
+                text = read_chunk_text(hit.path, hit.start_line, hit.end_line)
+                hit.snippet = text[:400]
+        return fused
 
     def _align_to_chunks(self, hits: Sequence[ChunkHit]) -> list[ChunkHit]:
         """Snap ripgrep's line hits onto the chunks that contain them.
