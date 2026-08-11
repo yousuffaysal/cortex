@@ -26,7 +26,6 @@ Schema shape
 from __future__ import annotations
 
 import sqlite3
-import struct
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
@@ -45,9 +44,8 @@ def quantize_int8(vector: list[float]) -> bytes:
     and 75 MB of vectors. The cost is ~0.4% quantisation error on cosine similarity,
     far below the noise floor of which chunk is "more relevant".
     """
-    return struct.pack(
-        f"{len(vector)}b",
-        *(max(-127, min(127, int(round(value * 127.0)))) for value in vector),
+    return sqlite_vec.serialize_int8(
+        [max(-127, min(127, int(round(value * 127.0)))) for value in vector]
     )
 
 
@@ -233,7 +231,7 @@ class IndexStore:
             )
             if vectors is not None and position < len(vectors):
                 self._conn.execute(
-                    "INSERT INTO chunk_vectors(rowid, embedding) VALUES (?,?)",
+                    "INSERT INTO chunk_vectors(rowid, embedding) VALUES (?, vec_int8(?))",
                     (chunk_id, quantize_int8(vectors[position])),
                 )
         return len(chunks)
@@ -277,7 +275,7 @@ class IndexStore:
             "FROM chunk_vectors v "
             "JOIN chunks c ON c.id = v.rowid "
             "JOIN files  f ON f.id = c.file_id "
-            "WHERE v.embedding MATCH ? AND k = ? "
+            "WHERE v.embedding MATCH vec_int8(?) AND k = ? "
             "ORDER BY v.distance",
             (quantize_int8(vector), limit),
         ).fetchall()
